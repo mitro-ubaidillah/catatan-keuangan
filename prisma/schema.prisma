@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  displayName  String
+  email        String?        @unique
+  passwordHash String?
+  role         String         @default("user")
+  telegramId   String?        @unique
+  waJid        String?        @unique
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
+  memberships  GroupMember[]
+  transactions Transaction[]
+  assets       Asset[]
+}
+
+model Group {
+  id                     String        @id @default(cuid())
+  name                   String
+  financeSpreadsheetId   String
+  financeSheetName       String        @default("transactions")
+  assetSpreadsheetId     String
+  assetSheetName         String        @default("assets")
+  createdAt              DateTime      @default(now())
+  memberships            GroupMember[]
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String
+  userId    String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  amount        Int
+  category      String
+  description   String
+  date          DateTime
+  paymentMethod String?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model Asset {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String
+  name         String
+  quantity     Float
+  unit         String
+  buyPrice     Int?
+  currentPrice Int?
+  currency     String
+  lastUpdated  DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lastUpdated])
+}

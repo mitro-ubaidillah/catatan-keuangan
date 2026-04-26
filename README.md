@@ -7,6 +7,7 @@ Arsitektur bot sekarang menggunakan **database sebagai penyimpanan utama** (tanp
 - Registrasi user:
   - `/daftar Mitro`
   - `/register Mitro`
+  - Bot kirim link onboarding web untuk set email/password
 - Catat transaksi:
   - `/pengeluaran beli bakso 10000`
   - `/pemasukan bonus tahunan 3000000`
@@ -18,10 +19,27 @@ Arsitektur bot sekarang menggunakan **database sebagai penyimpanan utama** (tanp
   - `/statistik 2026-04`
 - Health check:
   - `/health` atau `/ping`
+- Cek profil/status user:
+  - `/profil`
+  - `/profile`
+  - `/status`
+- Export file Excel:
+  - `/export`
+  - Bot akan mengirim file `.xls` berisi sheet `Transactions` dan `Assets`
 - Web dashboard:
   - Login/Register user
   - User dashboard (ringkasan finansial + data terbaru)
   - Superadmin dashboard (kelola user, role, aktif/nonaktif)
+  - Chart pertumbuhan user + log aktivitas terbaru
+- Subscription:
+  - Trial otomatis untuk user baru
+  - Pembatasan akses transaksi/stat saat subscription non-aktif
+  - Manajemen subscription dari dashboard superadmin
+- Reliabilitas bot:
+  - Idempotency incoming message (hindari proses duplikat)
+  - Rate limit command berat (`/statistik`, `/export`)
+  - Queue job command berat
+  - Retry kirim pesan ke Telegram/WhatsApp dengan exponential backoff
 
 ## Arsitektur Baru (DB First)
 
@@ -64,6 +82,7 @@ npm install
 4. Isi env web minimal:
 
 ```env
+WEB_BASE_URL="http://localhost:3000"
 SESSION_SECRET="ganti-dengan-secret-panjang-min-16-karakter"
 SUPERADMIN_EMAIL="admin@contoh.com"
 SUPERADMIN_PASSWORD="password-admin-awal"
@@ -87,6 +106,12 @@ npm run dev
 - `http://localhost:3000/register`
 - Superadmin otomatis di-bootstrap dari env saat server start
 
+8. Alur onboarding Telegram -> Web:
+1. User kirim `/daftar Nama` di Telegram
+2. Bot mengirim link onboarding (`/onboarding/:token`)
+3. User buka link dan set `nama + email + password`
+4. Setelah submit, user otomatis login ke dashboard web
+
 ## Role Dashboard
 
 - `user`: lihat dashboard milik sendiri
@@ -96,12 +121,12 @@ npm run dev
 
 - Ubah role user ↔ superadmin
 - Aktif/nonaktifkan user
+- Delete user dan restore user
 - Pantau total user, transaksi, aset
 
 ## Catatan Migrasi
 
 - Command `/sheet` saat ini non-aktif dan akan memberi pesan bahwa mode spreadsheet dimatikan.
-- Jika nanti perlu export laporan, tambahkan fitur `/export` (CSV atau sinkronisasi opsional ke Sheets).
 
 ## Catatan WA reverse engineering
 

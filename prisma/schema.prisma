@@ -13,14 +13,21 @@ model User {
   email        String?        @unique
   passwordHash String?
   role         String         @default("user")
+  subscriptionPlan   String   @default("free")
+  subscriptionStatus String   @default("active")
+  subscriptionEndsAt DateTime?
   telegramId   String?        @unique
   waJid        String?        @unique
   isActive     Boolean        @default(true)
+  deletedAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @default(now()) @updatedAt
   memberships  GroupMember[]
   transactions Transaction[]
   assets       Asset[]
+  onboardingTokens OnboardingToken[]
+
+  @@index([deletedAt])
 }
 
 model Group {
@@ -79,4 +86,30 @@ model Asset {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, lastUpdated])
+}
+
+model OnboardingToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model ProcessedMessage {
+  id                String   @id @default(cuid())
+  dedupeKey         String   @unique
+  platform          String
+  externalMessageId String?
+  externalChatId    String
+  externalUserId    String
+  messageText       String
+  createdAt         DateTime @default(now())
+
+  @@index([createdAt])
 }

@@ -84,3 +84,11 @@ export function parseStatisticCommand(text: string): { year?: number; month?: nu
 
   return { year, month };
 }
+
+export function parseProfileCommand(text: string): boolean {
+  return /^\/(profil|profile|status)\b/i.test(text.trim());
+}
+
+export function parseExportCommand(text: string): boolean {
+  return /^\/export\b/i.test(text.trim());
+}

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { config } from "../config.js";
 import { setWhatsAppState } from "../services/health.js";
 import { logger } from "../utils/logger.js";
+import { retry } from "../utils/retry.js";
 
 type OnTextHandler = (payload: {
   platform: "whatsapp";
@@ -11,7 +12,18 @@ type OnTextHandler = (payload: {
   userId: string;
   text: string;
   senderName?: string;
-}) => Promise<string>;
+  messageId?: string;
+  messageTimestamp?: Date;
+}) => Promise<{
+  text: string;
+  skipSend?: boolean;
+  document?: {
+    fileName: string;
+    mimeType: string;
+    buffer: Buffer;
+    caption?: string;
+  };
+}>;
 
 export async function initWhatsApp(onText: OnTextHandler) {
   if (config.WA_ENABLED !== "true") {
@@ -45,10 +57,37 @@ export async function initWhatsApp(onText: OnTextHandler) {
       chatId,
       userId,
       text,
-      senderName: msg.pushName ?? "unknown"
+      senderName: msg.pushName ?? "unknown",
+      messageId: msg.key.id,
+      messageTimestamp: msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000) : new Date()
     });
+    if (reply.skipSend) return;
 
-    await sock.sendMessage(chatId, { text: reply });
+    if (reply.document) {
+      await retry(
+        () => sock.sendMessage(chatId, {
+          document: reply.document!.buffer,
+          fileName: reply.document!.fileName,
+          mimetype: reply.document!.mimeType,
+          caption: reply.document!.caption ?? reply.text
+        }),
+        {
+          attempts: config.BOT_SEND_RETRY_ATTEMPTS,
+          baseDelayMs: config.BOT_SEND_RETRY_BASE_MS,
+          maxDelayMs: config.BOT_SEND_RETRY_MAX_MS
+        }
+      );
+      return;
+    }
+
+    await retry(
+      () => sock.sendMessage(chatId, { text: reply.text }),
+      {
+        attempts: config.BOT_SEND_RETRY_ATTEMPTS,
+        baseDelayMs: config.BOT_SEND_RETRY_BASE_MS,
+        maxDelayMs: config.BOT_SEND_RETRY_MAX_MS
+      }
+    );
   });
 
   sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {

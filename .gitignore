@@ -4,3 +4,5 @@ node_modules
 *.db
 *.db-journal
 dist
+client_secret_*.json
+famous-tree-*.json

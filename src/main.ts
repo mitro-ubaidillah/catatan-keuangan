@@ -119,6 +119,8 @@ async function onIncomingText(payload: IncomingPayload): Promise<BotReply> {
     }
 
     if (cmd.kind === "stat" && cmd.payload) {
+      const statPayload = cmd.payload;
+
       if (!user) {
         return reply([
           "Kamu belum terdaftar.",
@@ -133,11 +135,11 @@ async function onIncomingText(payload: IncomingPayload): Promise<BotReply> {
         return reply(`Terlalu sering meminta statistik. Coba lagi dalam ${limit.retryAfterSec ?? 1} detik.`);
       }
 
-      const result = await enqueueHeavyJob(() => getStats(user.id, cmd.payload));
-      const periodLabel = cmd.payload.year && cmd.payload.month
-        ? `${cmd.payload.year}-${String(cmd.payload.month).padStart(2, "0")}`
-        : cmd.payload.year
-          ? String(cmd.payload.year)
+      const result = await enqueueHeavyJob(() => getStats(user.id, statPayload));
+      const periodLabel = statPayload.year && statPayload.month
+        ? `${statPayload.year}-${String(statPayload.month).padStart(2, "0")}`
+        : statPayload.year
+          ? String(statPayload.year)
           : "Semua";
       const top = result.topCategories.length
         ? result.topCategories.map(([cat, amount]) => `- ${cat}: ${formatIdr(amount)}`).join("\n")

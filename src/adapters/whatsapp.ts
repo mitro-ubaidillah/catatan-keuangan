@@ -58,7 +58,7 @@ export async function initWhatsApp(onText: OnTextHandler) {
       userId,
       text,
       senderName: msg.pushName ?? "unknown",
-      messageId: msg.key.id,
+      messageId: msg.key.id ?? undefined,
       messageTimestamp: msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000) : new Date()
     });
     if (reply.skipSend) return;
